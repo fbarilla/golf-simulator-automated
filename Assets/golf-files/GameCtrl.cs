@@ -263,7 +263,7 @@ public class GameCtrl : MonoBehaviour {
 				m_Id = int.Parse (strArr [0]);
 				m_HolePos = int.Parse (strArr [1]);
 				m_BallPos = int.Parse (strArr [2]);
-				accelFactor = float.Parse(strArr [3]);
+				accelFactor = float.Parse(strArr [3])/10;
 				m_Angle = float.Parse(strArr [4]);
 
 				// position the ball
