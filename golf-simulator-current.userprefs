@@ -1,0 +1,14 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/golf-files/GameCtrl.cs">
+    <Files>
+      <File FileName="Assets/golf-files/GameCtrl.cs" Line="56" Column="7" />
+      <File FileName="Assets/golf-files/holeCtrl.cs" Line="28" Column="14" />
+      <File FileName="Assets/golf-files/Lerp.cs" Line="14" Column="32" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
