@@ -51,8 +51,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\golf-files\GameCtrl.cs" />
      <Compile Include="Assets\golf-files\holeCtrl.cs" />
+     <Compile Include="Assets\golf-files\PlayerCtrl.cs" />
  <Reference Include="Facebook.Unity.Settings">
  <HintPath>/home/fbarilla/golf-simulator-automated/Library/FacebookSDK/Facebook.Unity.Settings.dll</HintPath>
  </Reference>
