@@ -8,7 +8,7 @@ import signal
 # results file format
 # transaction id, distance from the hole, Relative positiob to the hole (Vector3) 
 # i.e.  "1, 2.09, (-1.89, -10.91, -3.71)"
-watch_file = '/tmp/unity_results.txt'
+result_file = '/tmp/unity_results.txt'
 
 # data file format
 # transaction id, hole position, ball position, acceleration, angle (initial angle to the hole = 0)
@@ -19,8 +19,8 @@ data_file = '/tmp/unity_data.txt'
 log_file = '/tmp/unity_log.txt'
 
 # variables
-min_accel = 70
-max_accel = 160
+min_accel = 80
+max_accel = 200
 min_angle = -10
 max_angle = 10
 
@@ -44,18 +44,10 @@ except:
 	with open(log_file, 'w') as file:
 		file.close()
 
-# create the result file if it does not exists yet
-try:
-	os.stat(watch_file)
-except:
-	with open(watch_file, 'w') as file:
-		file.close()
-
-
 
 def readResultFile():
 	print ("Read results")
-	with open(watch_file, 'r') as file:	
+	with open(result_file, 'r') as file:	
 		line = file.readline()
 	file.close()
 	if(len(line.strip()) != 0):
@@ -96,11 +88,6 @@ def writeInputDataFile():
     	Watcher.angle = random.randrange(min_angle, max_angle)
 	# print ("Angle: " + str(Watcher.angle)
 
-	# TEST TEST TEST
-	# Watcher.accel = 160
-	# Watcher.angle = -1
-
-
 	# pickup randomly hole and ball position among three locations [1,2,3]
 	Watcher.hole_pos = random.randint(1,3)
 	Watcher.ball_pos = random.randint(1,3)
@@ -119,20 +106,25 @@ def writeInputDataFile():
     	file.close()
 	print("Data: " + data_str)
 
+# write a first set of data 
+writeInputDataFile()
+
+# wait for a result file change
 # an approach based on message queue would be much better....
 while True:
-    ts = os.stat(watch_file).st_mtime
-    if(ts != Watcher.previous_timestamp):
-	print("File has changed...")
-	# increment transaction id	
-	Watcher.counter += 1
-	Watcher.previous_timestamp = ts
-	# read results
-	readResultFile()
-	# write logs
-	writeLogFile()
-	# write next set of data
-	writeInputDataFile()
+    if(os.path.exists(result_file)):
+	    ts = os.stat(result_file).st_mtime
+	    if(ts != Watcher.previous_timestamp):
+		print("File has changed...")
+		# increment transaction id	
+		Watcher.counter += 1
+		Watcher.previous_timestamp = ts
+		# read results
+		readResultFile()
+		# write logs
+		writeLogFile()
+		# write next set of data
+		writeInputDataFile()
 
-    time.sleep(2)
+	    time.sleep(1)
 
