@@ -53,7 +53,7 @@ public class holeCtrl : MonoBehaviour {
 	}
 
 	// Update is called once per frame
-	void Update () {
+	void FixedUpdate () {
 
 		currentHolePos = PlayerCtrl.m_HolePos;
 		if (currentHolePos != previousHolePos) {
