@@ -160,7 +160,7 @@ public class PlayerCtrl : MonoBehaviour {
 				// wait for the expternal python process to read the result file and generate new set of data
 				StartCoroutine(WaitForSeconds());
 				// get new set of data
-				getNextData();
+				// getNextData();
 				break;
 		}
 
@@ -185,6 +185,8 @@ public class PlayerCtrl : MonoBehaviour {
 
 	IEnumerator WaitForSeconds() {
 		yield return new WaitForSeconds(5.0f);
+		// get new set of data
+		getNextData();
 	}
 
 	IEnumerator Reset() {
