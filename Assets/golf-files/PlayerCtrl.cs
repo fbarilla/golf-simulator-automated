@@ -86,6 +86,9 @@ public class PlayerCtrl : MonoBehaviour {
 				transform.position = m_StartPos;
 				//This resets the velocity of the Rigidbody
 				m_Rigidbody.velocity = new Vector3 (0f, 0f, 0f);
+
+				// start after the variables have been set
+				m_ModeSwitching = ModeSwitching.Force;
 				break;
 
 			//This is Force Mode
@@ -122,7 +125,7 @@ public class PlayerCtrl : MonoBehaviour {
 				}
 
 				// test if the ball has fallen 
-				if (m_Rigidbody.position.y < -5) {
+				if (m_Rigidbody.position.y < -3) {
 
 					if (hasWon == false) {
 						//Debug.Log ("Ball has fallen outside the green....");
@@ -242,7 +245,8 @@ public class PlayerCtrl : MonoBehaviour {
 
 				// restart the game
 				// Debug.Log ("Restart Game....");
-				StartCoroutine (Reset ());
+				// StartCoroutine (Reset ());
+				m_ModeSwitching = ModeSwitching.Start;
 
 			} else {
 				//Debug.Log ("No data change....");
