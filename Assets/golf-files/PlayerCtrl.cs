@@ -56,6 +56,8 @@ public class PlayerCtrl : MonoBehaviour {
 		m_Renderer = GetComponent<Renderer>();
 		// hide the ball unitl it's positioned
 		m_Renderer.enabled = false;
+		// check fps
+		Debug.Log("FPS: " + 1.0f / Time.deltaTime);
 		// wait for new data to be sent by external python process
 		m_ModeSwitching = ModeSwitching.Idle;
 	}
@@ -119,7 +121,8 @@ public class PlayerCtrl : MonoBehaviour {
 							m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 							results = "-99";
 							// switch to results
-							m_ModeSwitching = ModeSwitching.Result;
+							// m_ModeSwitching = ModeSwitching.Result;
+							StartCoroutine(DelayResultWriting());
 						}
 					}
 				}
@@ -133,7 +136,8 @@ public class PlayerCtrl : MonoBehaviour {
 						//stop the ball
 						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 						// switch to results
-						m_ModeSwitching = ModeSwitching.Result;
+						// m_ModeSwitching = ModeSwitching.Result;
+						StartCoroutine(DelayResultWriting());
 					}
 				}
 				break;
@@ -158,7 +162,7 @@ public class PlayerCtrl : MonoBehaviour {
 			case ModeSwitching.Idle:
 				// results have been written. 
 				// wait for the expternal python process to read the result file and generate new set of data
-				StartCoroutine(WaitForSeconds());
+				StartCoroutine(WaitForNextData());
 				// get new set of data
 				// getNextData();
 				break;
@@ -178,12 +182,19 @@ public class PlayerCtrl : MonoBehaviour {
 			// set the flag
 			hasWon = true;
 			// switch to results
-			m_ModeSwitching = ModeSwitching.Result;
+			//m_ModeSwitching = ModeSwitching.Result;
+			StartCoroutine(DelayResultWriting());
 
 		}
 	}
 
-	IEnumerator WaitForSeconds() {
+	IEnumerator DelayResultWriting() {
+		yield return new WaitForSeconds(1.0f);
+		// get new set of data
+		m_ModeSwitching = ModeSwitching.Result;
+	}
+
+	IEnumerator WaitForNextData() {
 		yield return new WaitForSeconds(5.0f);
 		// get new set of data
 		getNextData();
