@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 public class PlayerCtrl : MonoBehaviour {
 
@@ -11,8 +12,8 @@ public class PlayerCtrl : MonoBehaviour {
 
 	// ball positions 
 	private float[] pos_1 = { 7.332f, -0.192f, -1.554f};
-	private float[] pos_2 = { 7.332f, -0.137f, 0.159f};
-	private float[] pos_3 = { 6.658f, -0.272f, -2.489f};
+	private float[] pos_2 = { 7.332f, -0.146f, 0.159f};
+	private float[] pos_3 = { 6.658f, -0.25f, -2.489f};
 	private float[] pos;
 
 	//Use to switch between Force Modes
@@ -47,6 +48,11 @@ public class PlayerCtrl : MonoBehaviour {
 
 	public static int m_HolePos = 1;
 	private Renderer m_Renderer;
+	private int cnt;
+
+	void Awake() {
+		Application.logMessageReceived += HandleException;
+	}
 
 	// Use this for initialization
 	void Start () {
@@ -58,8 +64,12 @@ public class PlayerCtrl : MonoBehaviour {
 		m_Renderer.enabled = false;
 		// check fps
 		Debug.Log("FPS: " + 1.0f / Time.deltaTime);
+
 		// wait for new data to be sent by external python process
 		m_ModeSwitching = ModeSwitching.Idle;
+
+		// start the polling process
+		StartCoroutine (CheckInputFile ());
 	}
 
 
@@ -121,8 +131,8 @@ public class PlayerCtrl : MonoBehaviour {
 							m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 							results = "-99";
 							// switch to results
-							// m_ModeSwitching = ModeSwitching.Result;
-							StartCoroutine(DelayResultWriting());
+							m_ModeSwitching = ModeSwitching.Result;
+							// StartCoroutine(DelayResultWriting());
 						}
 					}
 				}
@@ -136,8 +146,8 @@ public class PlayerCtrl : MonoBehaviour {
 						//stop the ball
 						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 						// switch to results
-						// m_ModeSwitching = ModeSwitching.Result;
-						StartCoroutine(DelayResultWriting());
+						m_ModeSwitching = ModeSwitching.Result;
+						// StartCoroutine(DelayResultWriting());
 					}
 				}
 				break;
@@ -162,7 +172,7 @@ public class PlayerCtrl : MonoBehaviour {
 			case ModeSwitching.Idle:
 				// results have been written. 
 				// wait for the expternal python process to read the result file and generate new set of data
-				StartCoroutine(WaitForNextData());
+				// StartCoroutine(WaitForNextData());
 				// get new set of data
 				// getNextData();
 				break;
@@ -182,8 +192,8 @@ public class PlayerCtrl : MonoBehaviour {
 			// set the flag
 			hasWon = true;
 			// switch to results
-			//m_ModeSwitching = ModeSwitching.Result;
-			StartCoroutine(DelayResultWriting());
+			m_ModeSwitching = ModeSwitching.Result;
+			// StartCoroutine(DelayResultWriting());
 
 		}
 	}
@@ -194,11 +204,17 @@ public class PlayerCtrl : MonoBehaviour {
 		m_ModeSwitching = ModeSwitching.Result;
 	}
 
-	IEnumerator WaitForNextData() {
-		yield return new WaitForSeconds(5.0f);
+	IEnumerator DelayRestart() {
+		yield return new WaitForSeconds(0.5f);
 		// get new set of data
-		getNextData();
+		m_ModeSwitching = ModeSwitching.Start;
 	}
+
+//	IEnumerator WaitForNextData() {
+//		yield return new WaitForSeconds(5.0f);
+//		// get new set of data
+//		getNextData();
+//	}
 
 	IEnumerator Reset() {
 		yield return new WaitForSeconds(0.2f);
@@ -211,60 +227,142 @@ public class PlayerCtrl : MonoBehaviour {
 		m_ModeSwitching = ModeSwitching.Force;
 	}
 
-	void getNextData() {
-		byte[] readData;
-		if (File.Exists (input_data)) {  
-			readData = File.ReadAllBytes (input_data);
-			string str = System.Text.Encoding.UTF8.GetString (readData);
-			if (str != previousData) {
-				previousData = str;
-				// load the new data
-				strArr = str.Split (new char[] { ',' });
-				m_Id = int.Parse (strArr [0]);
-				m_HolePos = int.Parse (strArr [1]);
-				m_BallPos = int.Parse (strArr [2]);
-				accelFactor = float.Parse (strArr [3]) / 10;
-				m_Angle = float.Parse (strArr [4]);
+//	void getNextData() {
+//		byte[] readData;
+//		if (File.Exists (input_data)) {  
+//			readData = File.ReadAllBytes (input_data);
+//			string str = System.Text.Encoding.UTF8.GetString (readData);
+//			if (str != previousData) {
+//				previousData = str;
+//				// load the new data
+//				strArr = str.Split (new char[] { ',' });
+//				m_Id = int.Parse (strArr [0]);
+//				m_HolePos = int.Parse (strArr [1]);
+//				m_BallPos = int.Parse (strArr [2]);
+//				accelFactor = float.Parse (strArr [3]) / 10;
+//				m_Angle = float.Parse (strArr [4]);
 
-				Debug.Log ("Data: " + str);
+//				Debug.Log ("Data: " + str);
 
-				// position the ball
-				//select 
-				if (m_BallPos == 1) {
-					pos = pos_1;
-				} else if (m_BallPos == 2) {
-					pos = pos_2;
-				} else if (m_BallPos == 3) {
-					pos = pos_3;
+//				// position the ball
+//				//select 
+//				if (m_BallPos == 1) {
+//					pos = pos_1;
+//				} else if (m_BallPos == 2) {
+//					pos = pos_2;
+//				} else if (m_BallPos == 3) {
+//					pos = pos_3;
+//				}
+//				//Debug.Log ("Ball Position: " + m_BallPos);
+//				Vector3 ball_pos = new Vector3 (pos [0], pos [1], pos [2]);
+//				//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+//				transform.position = ball_pos;
+
+//				//The GameObject's starting position and Rigidbody position
+//				m_StartPos = transform.position;
+//				// compute initial distance
+//				m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
+//				//Debug.Log ("Initial Distance: " + m_InitialDistance);
+//				// compute angle to the hole
+//				// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
+//				m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
+//				//Debug.Log ("Angle: " + m_InitialAngle);
+//				// freeze the ball
+//				m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+//				// display the ball 
+//				m_Renderer.enabled = true;
+
+//				// restart the game
+//				// Debug.Log ("Restart Game....");
+//				// m_ModeSwitching = ModeSwitching.Start;
+//				StartCoroutine (DelayRestart ());
+
+//			} else {
+//				//Debug.Log ("No data change....");
+//			}
+//		}
+//	}
+
+	IEnumerator CheckInputFile() {
+		float freq = 2.0f;
+		float timer = 0;
+		while (true) {
+			byte[] readData;
+			if(File.Exists (input_data)){
+				readData = File.ReadAllBytes (input_data);
+				string str = System.Text.Encoding.UTF8.GetString (readData);
+
+				if (str.Length != 0) {
+					cnt = str.Split (new char[] { ',' }).Length - 1;
 				}
-				//Debug.Log ("Ball Position: " + m_BallPos);
-				Vector3 ball_pos = new Vector3 (pos [0], pos [1], pos [2]);
-				//Debug.Log ("Position: " + hole_pos.ToString("F3"));
-				transform.position = ball_pos;
+				// check if the data line has been fully written (4 commas )
+				if (cnt == 4) {
+					if (str != previousData) {
+						previousData = str;
+						// load the new data
+						strArr = str.Split (new char[] { ',' });
+						m_Id = int.Parse (strArr [0]);
+						m_HolePos = int.Parse (strArr [1]);
+						m_BallPos = int.Parse (strArr [2]);
+						accelFactor = float.Parse (strArr [3]) / 10;
+						m_Angle = float.Parse (strArr [4]);
 
-				//The GameObject's starting position and Rigidbody position
-				m_StartPos = transform.position;
-				// compute initial distance
-				m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
-				//Debug.Log ("Initial Distance: " + m_InitialDistance);
-				// compute angle to the hole
-				// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
-				m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
-				//Debug.Log ("Angle: " + m_InitialAngle);
-				// freeze the ball
-				m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
-				// display the ball 
-				m_Renderer.enabled = true;
+						Debug.Log ("Data: " + str);
 
-				// restart the game
-				// Debug.Log ("Restart Game....");
-				// StartCoroutine (Reset ());
-				m_ModeSwitching = ModeSwitching.Start;
+						// position the ball
+						//select
+						if (m_BallPos == 1) {
+							pos = pos_1;
+						} else if (m_BallPos == 2) {
+							pos = pos_2;
+						} else if (m_BallPos == 3) {
+							pos = pos_3;
+						}
+						//Debug.Log ("Ball Position: " + m_BallPos);
+						Vector3 hole_pos = new Vector3 (pos [0], pos [1], pos [2]);
+						//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+						transform.position = hole_pos;
 
-			} else {
-				//Debug.Log ("No data change....");
+						//The GameObject's starting position and Rigidbody position
+						m_StartPos = transform.position;
+						// compute initial distance
+						m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
+						//Debug.Log ("Initial Distance: " + m_InitialDistance);
+						// compute angle to the hole
+						// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
+						m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
+						//Debug.Log ("Angle: " + m_InitialAngle);
+						// freeze the ball
+						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+						// display the ball
+						m_Renderer.enabled = true;
+
+						// restart the game
+						// Debug.Log ("Restart Game....");
+						// StartCoroutine (Reset ());
+						if (m_ModeSwitching == ModeSwitching.Idle) {
+							m_ModeSwitching = ModeSwitching.Start;
+						}
+
+					} else {
+						//Debug.Log ("No data change....");
+					}
+				}
 			}
+
+			while (timer < freq) {
+				timer += Time.deltaTime;
+				yield return null;
+			}
+			timer = 0f;
+			yield return null;
 		}
+
 	}
 
+	void HandleException(string condition, string stackTrace, LogType type) {
+		if (type == LogType.Exception) {
+			m_ModeSwitching = ModeSwitching.Idle;
+		}
+	}
 }
