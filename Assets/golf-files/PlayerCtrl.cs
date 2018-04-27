@@ -8,7 +8,6 @@ using System.Linq;
 public class PlayerCtrl : MonoBehaviour {
 
 	public Transform holeObj;
-	// public holeCtrl holeScript;
 
 	// ball positions 
 	private float[] pos_1 = { 7.332f, -0.192f, -1.554f};
@@ -22,10 +21,8 @@ public class PlayerCtrl : MonoBehaviour {
 
 	Rigidbody m_Rigidbody;
 	Vector3 vForce;
-	//private bool isGameOver = false;
 	private bool hasWon = false;
 	private string m_DistanceString;
-	//private float m_Accel = 150;
 	private float m_Angle;
 	private float m_InitialDistance, m_InitialAngle;
 	private Vector3 m_StartPos; 
@@ -132,7 +129,6 @@ public class PlayerCtrl : MonoBehaviour {
 							results = "-99";
 							// switch to results
 							m_ModeSwitching = ModeSwitching.Result;
-							// StartCoroutine(DelayResultWriting());
 						}
 					}
 				}
@@ -147,7 +143,6 @@ public class PlayerCtrl : MonoBehaviour {
 						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 						// switch to results
 						m_ModeSwitching = ModeSwitching.Result;
-						// StartCoroutine(DelayResultWriting());
 					}
 				}
 				break;
@@ -170,11 +165,7 @@ public class PlayerCtrl : MonoBehaviour {
 				break;
 
 			case ModeSwitching.Idle:
-				// results have been written. 
-				// wait for the expternal python process to read the result file and generate new set of data
-				// StartCoroutine(WaitForNextData());
-				// get new set of data
-				// getNextData();
+				// waiting zone
 				break;
 		}
 
@@ -193,95 +184,9 @@ public class PlayerCtrl : MonoBehaviour {
 			hasWon = true;
 			// switch to results
 			m_ModeSwitching = ModeSwitching.Result;
-			// StartCoroutine(DelayResultWriting());
 
 		}
 	}
-
-	IEnumerator DelayResultWriting() {
-		yield return new WaitForSeconds(1.0f);
-		// get new set of data
-		m_ModeSwitching = ModeSwitching.Result;
-	}
-
-	IEnumerator DelayRestart() {
-		yield return new WaitForSeconds(0.5f);
-		// get new set of data
-		m_ModeSwitching = ModeSwitching.Start;
-	}
-
-//	IEnumerator WaitForNextData() {
-//		yield return new WaitForSeconds(5.0f);
-//		// get new set of data
-//		getNextData();
-//	}
-
-	IEnumerator Reset() {
-		yield return new WaitForSeconds(0.2f);
-		m_ModeSwitching = ModeSwitching.Start;
-		StartCoroutine(Restart());
-	}
-
-	IEnumerator Restart() {
-		yield return new WaitForSeconds(0.2f);
-		m_ModeSwitching = ModeSwitching.Force;
-	}
-
-//	void getNextData() {
-//		byte[] readData;
-//		if (File.Exists (input_data)) {  
-//			readData = File.ReadAllBytes (input_data);
-//			string str = System.Text.Encoding.UTF8.GetString (readData);
-//			if (str != previousData) {
-//				previousData = str;
-//				// load the new data
-//				strArr = str.Split (new char[] { ',' });
-//				m_Id = int.Parse (strArr [0]);
-//				m_HolePos = int.Parse (strArr [1]);
-//				m_BallPos = int.Parse (strArr [2]);
-//				accelFactor = float.Parse (strArr [3]) / 10;
-//				m_Angle = float.Parse (strArr [4]);
-
-//				Debug.Log ("Data: " + str);
-
-//				// position the ball
-//				//select 
-//				if (m_BallPos == 1) {
-//					pos = pos_1;
-//				} else if (m_BallPos == 2) {
-//					pos = pos_2;
-//				} else if (m_BallPos == 3) {
-//					pos = pos_3;
-//				}
-//				//Debug.Log ("Ball Position: " + m_BallPos);
-//				Vector3 ball_pos = new Vector3 (pos [0], pos [1], pos [2]);
-//				//Debug.Log ("Position: " + hole_pos.ToString("F3"));
-//				transform.position = ball_pos;
-
-//				//The GameObject's starting position and Rigidbody position
-//				m_StartPos = transform.position;
-//				// compute initial distance
-//				m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
-//				//Debug.Log ("Initial Distance: " + m_InitialDistance);
-//				// compute angle to the hole
-//				// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
-//				m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
-//				//Debug.Log ("Angle: " + m_InitialAngle);
-//				// freeze the ball
-//				m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
-//				// display the ball 
-//				m_Renderer.enabled = true;
-
-//				// restart the game
-//				// Debug.Log ("Restart Game....");
-//				// m_ModeSwitching = ModeSwitching.Start;
-//				StartCoroutine (DelayRestart ());
-
-//			} else {
-//				//Debug.Log ("No data change....");
-//			}
-//		}
-//	}
 
 	IEnumerator CheckInputFile() {
 		float freq = 2.0f;
@@ -339,7 +244,6 @@ public class PlayerCtrl : MonoBehaviour {
 
 						// restart the game
 						// Debug.Log ("Restart Game....");
-						// StartCoroutine (Reset ());
 						if (m_ModeSwitching == ModeSwitching.Idle) {
 							m_ModeSwitching = ModeSwitching.Start;
 						}
