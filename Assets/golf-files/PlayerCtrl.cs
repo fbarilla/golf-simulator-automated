@@ -10,10 +10,14 @@ public class PlayerCtrl : MonoBehaviour {
 	public Transform holeObj;
 
 	// ball positions 
-	private float[] pos_1 = { 7.332f, -0.192f, -1.554f};
-	private float[] pos_2 = { 7.332f, -0.146f, 0.159f};
-	private float[] pos_3 = { 6.658f, -0.25f, -2.489f};
+	private float[] ball_pos_1 = { 7.332f, -0.192f, -1.554f};
+	private float[] ball_pos_2 = { 7.332f, -0.146f, 0.159f};
+	private float[] ball_pos_3 = { 6.658f, -0.25f, -2.489f};
 	private float[] pos;
+
+	private float[] hole_pos_1 = { 0.0f, -0.624f, 1.08f, 5.33f, -5.94f, -2.23f};  // Position, Rotation (3 val each)
+	private float[] hole_pos_2 = { 0.0f, -0.715f, 3.49f, -3.0f, -5.5f, -2.24f}; 
+	private float[] hole_pos_3 = { 1.52f, -0.29f, -2.32f, 3.44f, -5.5f, -2.24f}; 
 
 	//Use to switch between Force Modes
 	enum ModeSwitching { Start, Force, Result, Idle};
@@ -36,7 +40,7 @@ public class PlayerCtrl : MonoBehaviour {
 
 	private float dragFactor = 0.05f;
 
-	private float lerpTime =5.0f;           // original: 2.0f
+	private float lerpTime = 5.0f;           // original: 2.0f
 	private float accelFactor = 15.0f;     // original: 25.0f
 	private float dragTrigger = 0.995f;
 	float currentLerpTime = 0;
@@ -82,8 +86,7 @@ public class PlayerCtrl : MonoBehaviour {
 				drag = 0.0f;
 				// reset the flags and variables
 				currentLerpTime = 0;
-				// reset the angle
-				m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
+
 				// reset the distance
 				m_DistanceString = "-1";
 				// reset the mass and the drag
@@ -115,9 +118,8 @@ public class PlayerCtrl : MonoBehaviour {
 				// acceleration/deceleration function (sigmoid)
 				float t = currentLerpTime / lerpTime;
 				t = t * t * (3f - 2f * t);
-				// Debug.Log ("t: " + t);
 				m_Rigidbody.AddForce (vForce * (1.0f - t) * accelFactor, ForceMode.Force);
-
+	
 				// almost stopped, apply drag
 				if (t > dragTrigger) {
 					drag += dragFactor;
@@ -217,26 +219,42 @@ public class PlayerCtrl : MonoBehaviour {
 						// position the ball
 						//select
 						if (m_BallPos == 1) {
-							pos = pos_1;
+							pos = ball_pos_1;
 						} else if (m_BallPos == 2) {
-							pos = pos_2;
+							pos = ball_pos_2;
 						} else if (m_BallPos == 3) {
-							pos = pos_3;
+							pos = ball_pos_3;
 						}
 						//Debug.Log ("Ball Position: " + m_BallPos);
-						Vector3 hole_pos = new Vector3 (pos [0], pos [1], pos [2]);
+						Vector3 ball_pos = new Vector3 (pos [0], pos [1], pos [2]);
 						//Debug.Log ("Position: " + hole_pos.ToString("F3"));
-						transform.position = hole_pos;
-
+						transform.position = ball_pos;
 						//The GameObject's starting position and Rigidbody position
 						m_StartPos = transform.position;
+
+						// position the hole
+						//select 
+						if (m_HolePos == 1) {
+							pos = hole_pos_1;
+						} else if (m_HolePos == 2) {
+							pos = hole_pos_2;
+						} else if (m_HolePos == 3) {
+							pos = hole_pos_3;
+						}
+
+						//Debug.Log("Hole Position: " + m_HolePos);
+						Vector3 hole_pos = new Vector3(pos[0], pos[1], pos[2]);
+						//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+						holeObj.transform.position = hole_pos;
+						Vector3 hole_rot = new Vector3(pos[3], pos[4], pos[5]);
+						holeObj.transform.rotation = Quaternion.Euler(hole_rot);
+
 						// compute initial distance
 						m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
-						//Debug.Log ("Initial Distance: " + m_InitialDistance);
 						// compute angle to the hole
 						// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
 						m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
-						//Debug.Log ("Angle: " + m_InitialAngle);
+						// Debug.Log ("Angle: " + m_InitialAngle);
 						// freeze the ball
 						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 						// display the ball
