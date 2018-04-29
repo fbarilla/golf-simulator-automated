@@ -7,6 +7,8 @@ using System.Linq;
 
 public class PlayerCtrl : MonoBehaviour {
 
+	private bool manual = true;
+
 	public Transform holeObj;
 
 	// ball positions 
@@ -20,13 +22,13 @@ public class PlayerCtrl : MonoBehaviour {
 	private float[] hole_pos_3 = { 1.52f, -0.29f, -2.32f, 3.44f, -5.5f, -2.24f}; 
 
 	//Use to switch between Force Modes
-	enum ModeSwitching { Start, Force, Result, Idle};
+	enum ModeSwitching { Start, Force, Result, Idle, Manual};
 	ModeSwitching m_ModeSwitching;
 
 	Rigidbody m_Rigidbody;
 	Vector3 vForce;
 	private bool hasWon = false;
-	private string m_DistanceString;
+	private string m_DistanceString = "0";
 	private float m_Angle;
 	private float m_InitialDistance, m_InitialAngle;
 	private Vector3 m_StartPos; 
@@ -37,11 +39,15 @@ public class PlayerCtrl : MonoBehaviour {
 	private string[] strArr;
 	private int m_BallPos;
 	private string results;
+	private string m_AccelFactorString = "150";
+	private string m_AngleString = "0";
+	private string m_HolePosString = "1";
+	private string m_BallPosString = "1";
 
 	private float dragFactor = 0.05f;
 
 	private float lerpTime = 5.0f;           // original: 2.0f
-	private float accelFactor = 15.0f;     // original: 25.0f
+	private float m_AccelFactor = 15.0f;     // original: 25.0f
 	private float dragTrigger = 0.995f;
 	float currentLerpTime = 0;
 	private string previousData = "";
@@ -57,6 +63,12 @@ public class PlayerCtrl : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+		// set input variables
+		m_AccelFactorString = "150";
+		m_AngleString = "0";
+		m_DistanceString = "0";
+		m_HolePosString = "1";
+		m_BallPosString = "1";
 		// get the Rigidbody component you attach to the GameObject
 		m_Rigidbody = GetComponent<Rigidbody>();
 		// get the renderer attached to the GameObject
@@ -64,13 +76,17 @@ public class PlayerCtrl : MonoBehaviour {
 		// hide the ball unitl it's positioned
 		m_Renderer.enabled = false;
 		// check fps
-		Debug.Log("FPS: " + 1.0f / Time.deltaTime);
+		// Debug.Log("FPS: " + 1.0f / Time.deltaTime);
 
 		// wait for new data to be sent by external python process
 		m_ModeSwitching = ModeSwitching.Idle;
 
 		// start the polling process
 		StartCoroutine (CheckInputFile ());
+
+		if (manual) {
+			m_ModeSwitching = ModeSwitching.Manual;
+		}
 	}
 
 
@@ -104,7 +120,7 @@ public class PlayerCtrl : MonoBehaviour {
 				break;
 
 			//This is Force Mode
-			case ModeSwitching.Force:
+		case ModeSwitching.Force:
 				// remove the contstraint (stop)
 				m_Rigidbody.constraints = RigidbodyConstraints.None;
 				// compute force to apply based on the angle
@@ -118,7 +134,7 @@ public class PlayerCtrl : MonoBehaviour {
 				// acceleration/deceleration function (sigmoid)
 				float t = currentLerpTime / lerpTime;
 				t = t * t * (3f - 2f * t);
-				m_Rigidbody.AddForce (vForce * (1.0f - t) * accelFactor, ForceMode.Force);
+				m_Rigidbody.AddForce (vForce * (1.0f - t) * m_AccelFactor, ForceMode.Force);
 	
 				// almost stopped, apply drag
 				if (t > dragTrigger) {
@@ -169,6 +185,61 @@ public class PlayerCtrl : MonoBehaviour {
 			case ModeSwitching.Idle:
 				// waiting zone
 				break;
+
+			case ModeSwitching.Manual:
+				// reset distance
+				m_DistanceString = "0";
+				
+				// parse the input values
+				m_AccelFactor = float.Parse (m_AccelFactorString)/10;
+				m_Angle = float.Parse (m_AngleString);
+				m_HolePos = int.Parse (m_HolePosString);
+				m_BallPos = int.Parse (m_BallPosString);
+
+				// position the ball	
+				//select
+				if (m_BallPos == 1) {
+					pos = ball_pos_1;
+				} else if (m_BallPos == 2) {
+					pos = ball_pos_2;
+				} else if (m_BallPos == 3) {
+					pos = ball_pos_3;
+				}
+				//Debug.Log ("Ball Position: " + m_BallPos);
+				Vector3 ball_pos = new Vector3 (pos [0], pos [1], pos [2]);
+				//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+				transform.position = ball_pos;
+				//The GameObject's starting position and Rigidbody position
+				m_StartPos = transform.position;
+
+				// position the hole
+				//select 
+				if (m_HolePos == 1) {
+					pos = hole_pos_1;
+				} else if (m_HolePos == 2) {
+					pos = hole_pos_2;
+				} else if (m_HolePos == 3) {
+					pos = hole_pos_3;
+				}
+
+				//Debug.Log("Hole Position: " + m_HolePos);
+				Vector3 hole_pos = new Vector3(pos[0], pos[1], pos[2]);
+				//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+				holeObj.transform.position = hole_pos;
+				Vector3 hole_rot = new Vector3(pos[3], pos[4], pos[5]);
+				holeObj.transform.rotation = Quaternion.Euler(hole_rot);
+
+				// compute initial distance
+				m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
+				// compute angle to the hole
+				// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
+				m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
+				// Debug.Log ("Angle: " + m_InitialAngle);
+				// freeze the ball
+				m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+				// display the ball
+				m_Renderer.enabled = true;
+				break;
 		}
 
 	}
@@ -211,7 +282,7 @@ public class PlayerCtrl : MonoBehaviour {
 						m_Id = int.Parse (strArr [0]);
 						m_HolePos = int.Parse (strArr [1]);
 						m_BallPos = int.Parse (strArr [2]);
-						accelFactor = float.Parse (strArr [3]) / 10;
+						m_AccelFactor = float.Parse (strArr [3]) / 10;
 						m_Angle = float.Parse (strArr [4]);
 
 						Debug.Log ("Data: " + str);
@@ -285,6 +356,39 @@ public class PlayerCtrl : MonoBehaviour {
 	void HandleException(string condition, string stackTrace, LogType type) {
 		if (type == LogType.Exception) {
 			m_ModeSwitching = ModeSwitching.Idle;
+		}
+	}
+
+	//The function outputs buttons, text fields, and other interactable UI elements to the Scene in Game view
+	void OnGUI()
+	{
+		if (manual) {
+			//Getting the inputs from each text field and storing them as strings
+			GUI.Label (new Rect (15, 75, 50, 20), "Accel");
+			GUI.Label (new Rect (15, 105, 50, 20), "Angle");
+			GUI.Label (new Rect (15, 135, 50, 20), "Ball position");
+			GUI.Label (new Rect (15, 165, 50, 20), "Hole position");
+			GUI.Label (new Rect (15, 195, 50, 20), "Distance");
+			m_AccelFactorString = GUI.TextField (new Rect (100, 75, 50, 20), m_AccelFactorString, 25);
+			m_AngleString = GUI.TextField (new Rect (100, 105, 50, 20), m_AngleString, 25);
+			m_BallPosString = GUI.TextField (new Rect (100, 135, 50, 20), m_BallPosString, 25);
+			m_HolePosString = GUI.TextField (new Rect (100, 165, 50, 20), m_HolePosString, 25);
+			m_DistanceString = GUI.TextField (new Rect (100, 195, 50, 20), m_DistanceString, 25);
+
+			//Press the button to reset the GameObject and Rigidbody
+			if (GUI.Button (new Rect (10, 5, 150, 30), "Reset")) {
+				//This switches to the start/reset case
+				m_ModeSwitching = ModeSwitching.Manual;
+			}
+
+			//If you press the Start Button, switch to Force state
+			if (GUI.Button (new Rect (10, 40, 150, 30), "Start")) {
+				// remove the contstraint (stop)
+				m_Rigidbody.constraints = RigidbodyConstraints.None;
+				//Switch to Force (apply force to GameObject)
+				m_ModeSwitching = ModeSwitching.Start;
+			}
+
 		}
 	}
 }
