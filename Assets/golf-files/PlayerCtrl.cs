@@ -61,12 +61,11 @@ public class PlayerCtrl : MonoBehaviour {
 	private int cnt;
 
 	// socket with a minsky system in POK
-//	public string host = "192.168.1.101";
-	public string host = "129.33.248.110";
-//	public int port = 8989;
-//	public string host = "localhost";
-//	public string host = "192.168.1.100";
-	public int port = 8989;
+//	private string host = "192.168.1.101";
+//	private string host = "129.33.248.110";
+	private string host = "localhost";
+//	private string host = "192.168.1.100";
+	private int port = 8989;
 	private TcpClient socketConnection; 	
 	private Thread clientReceiveThread;
 
@@ -421,6 +420,7 @@ public class PlayerCtrl : MonoBehaviour {
 	private void ListenForData() { 		
 		try { 			
 			socketConnection = new TcpClient(host, port);  			
+			// socketConnection = new TcpClient("localhost", 8989);
 			Byte[] bytes = new Byte[1024];             
 			while (true) { 				
 				// Get a stream object for reading 				

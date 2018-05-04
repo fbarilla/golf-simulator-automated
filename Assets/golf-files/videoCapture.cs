@@ -238,7 +238,7 @@ public class videoCapture : MonoBehaviour {
 		{
 			var bytes = m_Output.EncodeToPNG();
 			var path = Path.Combine(m_Folder, string.Format("{0:D06}.png", m_FrameCount));
-			File.WriteAllBytes(path, bytes);
+//			File.WriteAllBytes(path, bytes);
 		}
 		catch (Exception e)
 		{
