@@ -1,6 +1,11 @@
-﻿using System;
-using System.IO;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+using System.Text;
+using System.Net.Sockets;
+using System;
+using System.Threading;
 
 public class videoCapture : MonoBehaviour {
 
@@ -21,6 +26,12 @@ public class videoCapture : MonoBehaviour {
 	Texture2D m_Output;
 	int m_FrameCount;
 
+	// socket
+	private string host = "localhost";
+	private int port = 8990;
+	private TcpClient socketConnection; 	
+	private Thread clientReceiveThread;
+
 	void OnEnable()
 	{
 		var dataPath = Application.dataPath;
@@ -37,6 +48,9 @@ public class videoCapture : MonoBehaviour {
 			Debug.LogException(e);
 			enabled = false;
 		}
+
+		// connect to server
+		ConnectToTcpServer(); 
 
 		m_Camera = GetComponent<Camera>();
 		m_Material = new Material(resolveShader);
@@ -246,5 +260,67 @@ public class videoCapture : MonoBehaviour {
 			enabled = false;
 		}
 	}
+
+	/// Setup socket connection. 	
+	private void ConnectToTcpServer () { 		
+		try {  
+
+			clientReceiveThread = new Thread (new ThreadStart(ListenForData)); 			
+			clientReceiveThread.IsBackground = true; 			
+			clientReceiveThread.Start();  		
+		} 		
+		catch (Exception e) { 			
+			Debug.Log("On client connect exception " + e); 		
+		} 	
+	}  
+
+	/// Runs in background clientReceiveThread; Listens for incomming data. 	
+	private void ListenForData() { 		
+		try { 			
+			socketConnection = new TcpClient(host, port);  			
+			// socketConnection = new TcpClient("localhost", 8989);
+			Byte[] bytes = new Byte[1024];             
+			while (true) { 				
+				// Get a stream object for reading 				
+				using (NetworkStream stream = socketConnection.GetStream()) { 					
+					int length; 					
+					// Read incomming stream into byte arrary. 					
+					while ((length = stream.Read(bytes, 0, bytes.Length)) != 0) { 						
+						var incommingData = new byte[length]; 						
+						Array.Copy(bytes, 0, incommingData, 0, length); 						
+						// Convert byte array to string message. 						
+						string serverMessage = Encoding.ASCII.GetString(incommingData); 						
+						Debug.Log("server message received as: " + serverMessage); 					
+					} 				
+				} 			
+			}         
+		}         
+		catch (SocketException socketException) {             
+			Debug.Log("Socket exception: " + socketException);         
+		}     
+	}  	
+
+	/// Send message to server using socket connection. 	
+	private void SendData() {         
+		if (socketConnection == null) {             
+			return;         
+		}  		
+		try { 			
+			// Get a stream object for writing. 			
+			NetworkStream stream = socketConnection.GetStream(); 			
+			if (stream.CanWrite) {                 
+				string clientMessage = "This is a message from one of your clients."; 				
+				// Convert string message to byte array.                 
+				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage); 				
+				// Write byte array to socketConnection stream.                 
+				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
+				Debug.Log("Client sent his message - should be received by server");             
+			}         
+		} 		
+		catch (SocketException socketException) {             
+			Debug.Log("Socket exception: " + socketException);         
+		}     
+	} 
+
 }
 
