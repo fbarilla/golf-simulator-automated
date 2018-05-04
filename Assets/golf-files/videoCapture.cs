@@ -2,8 +2,6 @@
 using System.IO;
 using UnityEngine;
 
-
-
 public class videoCapture : MonoBehaviour {
 
 	[Range(1, 120)]
@@ -14,8 +12,8 @@ public class videoCapture : MonoBehaviour {
 
 	public bool supersample = false;
 
-	[SerializeField, HideInInspector]
-	Shader resolveShader;
+	//[SerializeField, HideInInspector]
+	public Shader resolveShader;
 
 	string m_Folder;
 	Camera m_Camera;
