@@ -143,7 +143,8 @@ public class videoCapture : MonoBehaviour {
 		foreach (var target in targets)
 			RenderTexture.ReleaseTemporary(target);
 
-		SaveOutput();
+//		SaveOutput();
+		SendFrames();
 		m_FrameCount++;
 	}
 
@@ -252,7 +253,7 @@ public class videoCapture : MonoBehaviour {
 		{
 			var bytes = m_Output.EncodeToPNG();
 			var path = Path.Combine(m_Folder, string.Format("{0:D06}.png", m_FrameCount));
-//			File.WriteAllBytes(path, bytes);
+			File.WriteAllBytes(path, bytes);
 		}
 		catch (Exception e)
 		{
@@ -315,6 +316,29 @@ public class videoCapture : MonoBehaviour {
 				// Write byte array to socketConnection stream.                 
 				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
 				Debug.Log("Client sent his message - should be received by server");             
+			}         
+		} 		
+		catch (SocketException socketException) {             
+			Debug.Log("Socket exception: " + socketException);         
+		}     
+	} 
+
+	/// Send message to server using socket connection. 	
+	private void SendFrames() {         
+		if (socketConnection == null) {             
+			return;         
+		}  		
+		try { 			
+			// Get a stream object for writing. 			
+			NetworkStream stream = socketConnection.GetStream(); 			
+			if (stream.CanWrite) {                 
+				// Convert string message to byte array. 
+//				byte[] frameArray = Encoding.ASCII.GetBytes(m_Output); 	
+				byte[] frameArray = m_Output.EncodeToPNG();
+				// Write byte array to socketConnection stream.  
+//				Debug.Log("size: " + frameArray.Length);
+				stream.Write(frameArray, 0, frameArray.Length);     
+
 			}         
 		} 		
 		catch (SocketException socketException) {             

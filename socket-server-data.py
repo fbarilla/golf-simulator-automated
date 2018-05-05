@@ -5,7 +5,10 @@ Simple socket server using threads
 import socket
 import sys
 from thread import *
- 
+import cv2
+import numpy as np
+
+IMAGE_SIZE = 103664
 HOST = ''   # Symbolic name meaning all available interfaces
 PORT = 8990 # Arbitrary non-privileged port
  
@@ -27,21 +30,27 @@ print 'Socket now listening: ' + str(PORT)
  
 #Function for handling connections. This will be used to create threads
 def clientthread(conn):
+    count = 0
     #Sending message to connected client
-    conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
      
     #infinite loop so that function do not terminate and thread do not end.
     while True:
          
+	count += 1
+
         #Receiving from client
-        data = conn.recv(1024)
-        reply = 'OK...' + data
+	data = conn.recv(IMAGE_SIZE)
+	image = cv2.imread(data) 
+	if len(data) == IMAGE_SIZE:
+		# print "Received frame ...."		
+		file_bytes = np.asarray(bytearray(data), dtype=np.uint8)
+		# img_data_ndarray = cv2.imdecode(file_bytes, cv2.CV_LOAD_IMAGE_UNCHANGED)
+		image = cv2.imdecode(file_bytes, 1)
+		cv2.imshow('frame', image)
+		cv2.waitKey(0)
+
         if not data: 
             break
-	else:
-	    print data
-     
-        conn.sendall(reply)
      
     #came out of loop
     conn.close()
@@ -56,3 +65,4 @@ while 1:
     start_new_thread(clientthread ,(conn,))
  
 s.close()
+cv2.destroyAllWindows()
