@@ -34,20 +34,20 @@ public class videoCapture : MonoBehaviour {
 
 	void OnEnable()
 	{
-		var dataPath = Application.dataPath;
-		dataPath = dataPath.Substring(0, dataPath.Length - 6); // Remove 'Assets'
-		var date = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff");
-		m_Folder = Path.Combine(dataPath, date);
+//		var dataPath = Application.dataPath;
+//		dataPath = dataPath.Substring(0, dataPath.Length - 6); // Remove 'Assets'
+//		var date = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff");
+//		m_Folder = Path.Combine(dataPath, date);
 
-		try
-		{
-			Directory.CreateDirectory(m_Folder);
-		}
-		catch (Exception e)
-		{
-			Debug.LogException(e);
-			enabled = false;
-		}
+//		try
+//		{
+//			Directory.CreateDirectory(m_Folder);
+//		}
+//		catch (Exception e)
+//		{
+//			Debug.LogException(e);
+//			enabled = false;
+//		}
 
 		// connect to server
 		ConnectToTcpServer(); 
@@ -332,11 +332,17 @@ public class videoCapture : MonoBehaviour {
 			// Get a stream object for writing. 			
 			NetworkStream stream = socketConnection.GetStream(); 			
 			if (stream.CanWrite) {                 
-				// Convert string message to byte array. 
-//				byte[] frameArray = Encoding.ASCII.GetBytes(m_Output); 	
+				// Convert image to byte array. 
 				byte[] frameArray = m_Output.EncodeToPNG();
+
+				// serialize size of the image before sending it overthe socket
+				byte[] arrayLength = BitConverter.GetBytes(frameArray.Length);
+				stream.Write(arrayLength, 0, arrayLength.Length);     
+
 				// Write byte array to socketConnection stream.  
 //				Debug.Log("size: " + frameArray.Length);
+
+				// send image
 				stream.Write(frameArray, 0, frameArray.Length);     
 
 			}         

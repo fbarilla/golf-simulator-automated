@@ -7,8 +7,9 @@ import sys
 from thread import *
 import cv2
 import numpy as np
+import struct
 
-IMAGE_SIZE = 103664
+IMAGE_SIZE = 4
 HOST = ''   # Symbolic name meaning all available interfaces
 PORT = 8990 # Arbitrary non-privileged port
  
@@ -38,10 +39,19 @@ def clientthread(conn):
          
 	count += 1
 
-        #Receiving from client
+        #Receiving from client le lenght of the image sent
 	data = conn.recv(IMAGE_SIZE)
+
+	value = struct.unpack("I", bytearray(data))
+#	print int(value[0]) 
+	
+	# receiving the image
+	data = conn.recv(value[0])
+
+#	print "Data recieved..."
+
 	image = cv2.imread(data) 
-	if len(data) == IMAGE_SIZE:
+	if len(data) == value[0]:
 		# print "Received frame ...."		
 		file_bytes = np.asarray(bytearray(data), dtype=np.uint8)
 		# img_data_ndarray = cv2.imdecode(file_bytes, cv2.CV_LOAD_IMAGE_UNCHANGED)
