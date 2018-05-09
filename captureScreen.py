@@ -54,7 +54,7 @@ while True:
 
 		# compress
 		compressed_buffer = zlib.compress(pb_serialized, 9)
-		#print 'compressed buffer size: ' + str(len(compressed_buffer))
+		print 'compressed buffer size: ' + str(len(compressed_buffer))
 
 		# decompress
 		decompressed_buffer = zlib.decompress(compressed_buffer)
@@ -64,6 +64,7 @@ while True:
 		im = pickle.loads(decompressed_buffer)
 	else:
 		im = pixbuf2Image(pb)
+		#print 'Image size: ' + str(im.width * im.height)
 
 	# load the image into an array tocomply to the opencv format
 	open_cv_image = np.array(im) 
