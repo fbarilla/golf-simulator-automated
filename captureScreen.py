@@ -7,6 +7,8 @@ import numpy as np
 import cv2
 from PIL import Image
 from gtk import gdk
+import zlib
+import pickle
 
 def pixbuf2Image(pb):
    width,height = pb.get_width(),pb.get_height()
@@ -40,14 +42,29 @@ while True:
 	pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,False,8,sz[0],sz[1])
 	pb = pb.get_from_drawable(w,w.get_colormap(),0,0,0,0,sz[0],sz[1])
 
-	# convert the buffer into a PIL image
-	im = pixbuf2Image(pb)
+	# serialize buffer
+	pb_serialized = pickle.dumps(pb.get_pixels_array())
+	#print 'buffer size: ' + str(len(pb_serialized))
+
+	# compress
+	compressed_buffer = zlib.compress(pb_serialized, 9)
+	#print 'compressed buffer size: ' + str(len(compressed_buffer))
+
+	# decompress
+	decompressed_buffer = zlib.decompress(compressed_buffer)
+	#print 'decompressed buffer size: ' + str(len(decompressed_buffer))	
+
+	# deserialize 
+	im = pickle.loads(decompressed_buffer)
+
+	# convert the buffer into a PIL image (serialization/deserialization done using pickle)
+#	im = pixbuf2Image(pb)
 
 	# load the image into an array tocomply to the opencv format
 	open_cv_image = np.array(im) 
 	# Convert RGB to BGR 
 	opencv_image = open_cv_image[:, :, ::-1].copy() 
-
+	
 	while True:
 		# display the image
 		cv2.imshow('test', np.array(opencv_image))
