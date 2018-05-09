@@ -10,7 +10,8 @@ from gtk import gdk
 import zlib
 import pickle
 
-compress = False
+useCompress = False
+useSocket = False
 
 def pixbuf2Image(pb):
    width,height = pb.get_width(),pb.get_height()
@@ -47,7 +48,7 @@ while True:
 	pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,False,8,sz[0],sz[1])
 	pb = pb.get_from_drawable(w,w.get_colormap(),0,0,0,0,sz[0],sz[1])
 
-	if(compress):
+	if(useCompress):
 		# serialize buffer
 		pb_serialized = pickle.dumps(pb.get_pixels_array())
 		#print 'buffer size: ' + str(len(pb_serialized))
@@ -66,15 +67,18 @@ while True:
 		im = pixbuf2Image(pb)
 		#print 'Image size: ' + str(im.width * im.height)
 
-	# load the image into an array tocomply to the opencv format
-	open_cv_image = np.array(im) 
-	# Convert RGB to BGR 
-	opencv_image = open_cv_image[:, :, ::-1].copy() 
+	if(useSocket):
+		print 'Using socket'
+	else:
+		# load the image into an array tocomply to the opencv format
+		open_cv_image = np.array(im) 
+		# Convert RGB to BGR 
+		opencv_image = open_cv_image[:, :, ::-1].copy() 
 	
-	# display the image
-	cv2.imshow('test', np.array(opencv_image))
-	# Press "q" to quit
-	if cv2.waitKey(25) & 0xFF == ord('q'):
-		cv2.destroyAllWindows()
+		# display the image
+		cv2.imshow('test', np.array(opencv_image))
+		# Press "q" to quit
+		if cv2.waitKey(25) & 0xFF == ord('q'):
+			cv2.destroyAllWindows()
 
 	
