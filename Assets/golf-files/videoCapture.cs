@@ -20,7 +20,7 @@ public class videoCapture : MonoBehaviour {
 	//[SerializeField, HideInInspector]
 	public Shader resolveShader;
 
-	string m_Folder;
+//	string m_Folder;
 	Camera m_Camera;
 	Material m_Material;
 	Texture2D m_Output;
@@ -34,21 +34,6 @@ public class videoCapture : MonoBehaviour {
 
 	void OnEnable()
 	{
-//		var dataPath = Application.dataPath;
-//		dataPath = dataPath.Substring(0, dataPath.Length - 6); // Remove 'Assets'
-//		var date = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-ffff");
-//		m_Folder = Path.Combine(dataPath, date);
-
-//		try
-//		{
-//			Directory.CreateDirectory(m_Folder);
-//		}
-//		catch (Exception e)
-//		{
-//			Debug.LogException(e);
-//			enabled = false;
-//		}
-
 		// connect to server
 		ConnectToTcpServer(); 
 
@@ -143,7 +128,6 @@ public class videoCapture : MonoBehaviour {
 		foreach (var target in targets)
 			RenderTexture.ReleaseTemporary(target);
 
-//		SaveOutput();
 		SendFrames();
 		m_FrameCount++;
 	}
@@ -247,26 +231,10 @@ public class videoCapture : MonoBehaviour {
 		texture = new Texture2D(width, height, TextureFormat.ARGB32, false);
 	}
 
-	void SaveOutput()
-	{
-		try
-		{
-			var bytes = m_Output.EncodeToPNG();
-			var path = Path.Combine(m_Folder, string.Format("{0:D06}.png", m_FrameCount));
-			File.WriteAllBytes(path, bytes);
-		}
-		catch (Exception e)
-		{
-			Debug.LogException(e);
-			enabled = false;
-		}
-	}
-
 	/// Setup socket connection. 	
 	private void ConnectToTcpServer () { 		
 		try {  
-
-			clientReceiveThread = new Thread (new ThreadStart(ListenForData)); 			
+			clientReceiveThread = new Thread (new ThreadStart(SendDataThread)); 			
 			clientReceiveThread.IsBackground = true; 			
 			clientReceiveThread.Start();  		
 		} 		
@@ -275,53 +243,16 @@ public class videoCapture : MonoBehaviour {
 		} 	
 	}  
 
-	/// Runs in background clientReceiveThread; Listens for incomming data. 	
-	private void ListenForData() { 		
+	/// Runs in background clientReceiveThread	
+	private void SendDataThread() { 		
 		try { 			
 			socketConnection = new TcpClient(host, port);  			
-			// socketConnection = new TcpClient("localhost", 8989);
-			Byte[] bytes = new Byte[1024];             
-			while (true) { 				
-				// Get a stream object for reading 				
-				using (NetworkStream stream = socketConnection.GetStream()) { 					
-					int length; 					
-					// Read incomming stream into byte arrary. 					
-					while ((length = stream.Read(bytes, 0, bytes.Length)) != 0) { 						
-						var incommingData = new byte[length]; 						
-						Array.Copy(bytes, 0, incommingData, 0, length); 						
-						// Convert byte array to string message. 						
-						string serverMessage = Encoding.ASCII.GetString(incommingData); 						
-						Debug.Log("server message received as: " + serverMessage); 					
-					} 				
-				} 			
-			}         
 		}         
 		catch (SocketException socketException) {             
 			Debug.Log("Socket exception: " + socketException);         
 		}     
 	}  	
 
-	/// Send message to server using socket connection. 	
-	private void SendData() {         
-		if (socketConnection == null) {             
-			return;         
-		}  		
-		try { 			
-			// Get a stream object for writing. 			
-			NetworkStream stream = socketConnection.GetStream(); 			
-			if (stream.CanWrite) {                 
-				string clientMessage = "This is a message from one of your clients."; 				
-				// Convert string message to byte array.                 
-				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage); 				
-				// Write byte array to socketConnection stream.                 
-				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
-				Debug.Log("Client sent his message - should be received by server");             
-			}         
-		} 		
-		catch (SocketException socketException) {             
-			Debug.Log("Socket exception: " + socketException);         
-		}     
-	} 
 
 	/// Send message to server using socket connection. 	
 	private void SendFrames() {         
@@ -338,12 +269,12 @@ public class videoCapture : MonoBehaviour {
 				// serialize size of the image before sending it overthe socket
 				byte[] arrayLength = BitConverter.GetBytes(frameArray.Length);
 				stream.Write(arrayLength, 0, arrayLength.Length);     
-
+				
 				// Write byte array to socketConnection stream.  
-//				Debug.Log("size: " + frameArray.Length);
+				Debug.Log("size: " + frameArray.Length);
 
 				// send image
-				stream.Write(frameArray, 0, frameArray.Length);     
+//				stream.Write(frameArray, 0, frameArray.Length);     
 
 			}         
 		} 		

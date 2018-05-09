@@ -43,21 +43,21 @@ def clientthread(conn):
 	data = conn.recv(IMAGE_SIZE)
 
 	value = struct.unpack("I", bytearray(data))
-#	print int(value[0]) 
+	print 'Receiving size: ' + str(int(value[0])) 
 	
 	# receiving the image
-	data = conn.recv(value[0])
+#	data = conn.recv(value[0])
 
-#	print "Data recieved..."
+	print "Image recieved..."
 
-	image = cv2.imread(data) 
-	if len(data) == value[0]:
-		# print "Received frame ...."		
-		file_bytes = np.asarray(bytearray(data), dtype=np.uint8)
-		# img_data_ndarray = cv2.imdecode(file_bytes, cv2.CV_LOAD_IMAGE_UNCHANGED)
-		image = cv2.imdecode(file_bytes, 1)
-		cv2.imshow('frame', image)
-		cv2.waitKey(0)
+#	image = cv2.imread(data) 
+#	if len(data) == value[0]:
+#		# print "Received frame ...."		
+#		file_bytes = np.asarray(bytearray(data), dtype=np.uint8)
+#		# img_data_ndarray = cv2.imdecode(file_bytes, cv2.CV_LOAD_IMAGE_UNCHANGED)
+#		image = cv2.imdecode(file_bytes, 1)
+#		cv2.imshow('frame', image)
+#		cv2.waitKey(0)
 
         if not data: 
             break
