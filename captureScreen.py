@@ -9,13 +9,22 @@ from PIL import Image
 from gtk import gdk
 import zlib
 import pickle
+import socket,struct,sys,time
 
 useCompress = False
-useSocket = False
+useSocket = True
+HOST = ''   # Symbolic name meaning all available interfaces
+PORT = 8990 # Arbitrary non-privileged port
 
 def pixbuf2Image(pb):
    width,height = pb.get_width(),pb.get_height()
    return Image.frombytes("RGB",(width,height),pb.get_pixels() )
+
+def send_size(data):
+    sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.connect((HOST,PORT))
+    sock.sendall(struct.pack('>i', len(data))+data)
+    sock.close()
 
 
 # get screen 
@@ -68,7 +77,8 @@ while True:
 		#print 'Image size: ' + str(im.width * im.height)
 
 	if(useSocket):
-		print 'Using socket'
+		# print 'Using socket'
+		send_size(pickle.dumps(pb.get_pixels_array()))
 	else:
 		# load the image into an array tocomply to the opencv format
 		open_cv_image = np.array(im) 
