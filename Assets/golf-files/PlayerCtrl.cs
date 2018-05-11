@@ -10,7 +10,7 @@ using System.Threading;
 
 public class PlayerCtrl : MonoBehaviour {
 
-	private bool manual = true;
+	private bool manual = false;
 
 	public Transform holeObj;
 
@@ -25,7 +25,7 @@ public class PlayerCtrl : MonoBehaviour {
 	private float[] hole_pos_3 = { 1.52f, -0.29f, -2.32f, 3.44f, -5.5f, -2.24f}; 
 
 	//Use to switch between Force Modes
-	enum ModeSwitching { Start, Force, Result, Idle, Manual};
+	enum ModeSwitching { Start, Force, Result, Idle, Manual, Socket};
 	ModeSwitching m_ModeSwitching;
 
 	Rigidbody m_Rigidbody;
@@ -37,8 +37,7 @@ public class PlayerCtrl : MonoBehaviour {
 	private Vector3 m_StartPos; 
 	private float mass = 2.0f;
 	private float drag = 0.0f;
-	private string input_data = "/tmp/unity_data.txt";
-	private string output_results = "/tmp/unity_results.txt";
+
 	private string[] strArr;
 	private int m_BallPos;
 	private string results;
@@ -53,18 +52,15 @@ public class PlayerCtrl : MonoBehaviour {
 	private float m_AccelFactor = 15.0f;     // original: 25.0f
 	private float dragTrigger = 0.995f;
 	float currentLerpTime = 0;
-	private string previousData = "";
-	private int m_Id;
 
 	public static int m_HolePos = 1;
 	private Renderer m_Renderer;
 	private int cnt;
+	private bool isdataArrived = false;
 
 	// socket with a minsky system in POK
-//	private string host = "192.168.1.101";
-//	private string host = "129.33.248.110";
+	// private string host = "129.33.248.110"
 	private string host = "localhost";
-//	private string host = "192.168.1.100";
 	private int port = 8989;
 	private TcpClient socketConnection; 	
 	private Thread clientReceiveThread;
@@ -92,20 +88,10 @@ public class PlayerCtrl : MonoBehaviour {
 		// wait for new data to be sent by external python process
 		m_ModeSwitching = ModeSwitching.Idle;
 
-		// start the polling process
-		StartCoroutine (CheckInputFile ());
-
 		if (manual) {
 			m_ModeSwitching = ModeSwitching.Manual;
 		}
 	}
-
-	// Update is called once per frame
-	void Update () {         
-		if (Input.GetKeyDown(KeyCode.Space)) {             
-			SendMessage();         
-		}     
-	}  	
 
 	// Update is called once per frame
 	void FixedUpdate () {
@@ -183,8 +169,12 @@ public class PlayerCtrl : MonoBehaviour {
 				break;
 
 			case ModeSwitching.Result:
-				if (results.Equals ("-1")||results.Equals ("0")) {
+//				if (results.Equals ("-1")||results.Equals ("0")) {
+				if (results.Equals ("-1")) {
+					m_DistanceString = "-1";
 					// nothing else to do. Ball is in the hole or fell outside of the green
+				} else if (results.Equals ("0")) {
+					m_DistanceString = "0";
 				} else {
 					float dist = Vector3.Distance (transform.position, holeObj.transform.position);
 					m_DistanceString = dist.ToString ("F2");
@@ -192,15 +182,68 @@ public class PlayerCtrl : MonoBehaviour {
 					Vector3 relativeDistance = holeObj.InverseTransformPoint(transform.position);
 					results = m_DistanceString + ", " + relativeDistance.ToString("F2");
 				}
-				// write the results
-				byte[] myData = System.Text.Encoding.UTF8.GetBytes(m_Id + ", " + results);
-				File.WriteAllBytes (output_results, myData);
+
+				// send the results back tothe client
+				SendResults();
 				// go to idle state
 				m_ModeSwitching = ModeSwitching.Idle;
 				break;
 
 			case ModeSwitching.Idle:
 				// waiting zone
+				break;
+
+			case ModeSwitching.Socket:
+				// waiting zone
+				if(isdataArrived) {
+
+					// position the ball
+					//select
+					if (m_BallPos == 1) {
+						pos = ball_pos_1;
+					} else if (m_BallPos == 2) {
+						pos = ball_pos_2;
+					} else if (m_BallPos == 3) {
+						pos = ball_pos_3;
+					}
+					//Debug.Log ("Ball Position: " + m_BallPos);
+					Vector3 ball_position = new Vector3 (pos [0], pos [1], pos [2]);
+					//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+					transform.position = ball_position;
+					//The GameObject's starting position and Rigidbody position
+					m_StartPos = transform.position;
+
+					// position the hole
+					//select 
+					if (m_HolePos == 1) {
+						pos = hole_pos_1;
+					} else if (m_HolePos == 2) {
+						pos = hole_pos_2;
+					} else if (m_HolePos == 3) {
+						pos = hole_pos_3;
+					}
+
+					//Debug.Log("Hole Position: " + m_HolePos);
+					Vector3 hole_position = new Vector3(pos[0], pos[1], pos[2]);
+					//Debug.Log ("Position: " + hole_pos.ToString("F3"));
+					holeObj.transform.position = hole_position;
+					Vector3 hole_rotation = new Vector3(pos[3], pos[4], pos[5]);
+					holeObj.transform.rotation = Quaternion.Euler(hole_rotation);
+
+					// compute initial distance
+					m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
+					// compute angle to the hole
+					// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
+					m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
+					// Debug.Log ("Angle: " + m_InitialAngle);
+					// freeze the ball
+					m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+					// display the ball
+					m_Renderer.enabled = true;
+
+					m_ModeSwitching = ModeSwitching.Start;
+					isdataArrived = false;
+				}
 				break;
 
 			case ModeSwitching.Manual:
@@ -278,98 +321,6 @@ public class PlayerCtrl : MonoBehaviour {
 		}
 	}
 
-	IEnumerator CheckInputFile() {
-		float freq = 2.0f;
-		float timer = 0;
-		while (true) {
-			byte[] readData;
-			if(File.Exists (input_data)){
-				readData = File.ReadAllBytes (input_data);
-				string str = System.Text.Encoding.UTF8.GetString (readData);
-
-				if (str.Length != 0) {
-					cnt = str.Split (new char[] { ',' }).Length - 1;
-				}
-				// check if the data line has been fully written (4 commas )
-				if (cnt == 4) {
-					if (str != previousData) {
-						previousData = str;
-						// load the new data
-						strArr = str.Split (new char[] { ',' });
-						m_Id = int.Parse (strArr [0]);
-						m_HolePos = int.Parse (strArr [1]);
-						m_BallPos = int.Parse (strArr [2]);
-						m_AccelFactor = float.Parse (strArr [3]) / 10;
-						m_Angle = float.Parse (strArr [4]);
-
-						Debug.Log ("Data: " + str);
-
-						// position the ball
-						//select
-						if (m_BallPos == 1) {
-							pos = ball_pos_1;
-						} else if (m_BallPos == 2) {
-							pos = ball_pos_2;
-						} else if (m_BallPos == 3) {
-							pos = ball_pos_3;
-						}
-						//Debug.Log ("Ball Position: " + m_BallPos);
-						Vector3 ball_pos = new Vector3 (pos [0], pos [1], pos [2]);
-						//Debug.Log ("Position: " + hole_pos.ToString("F3"));
-						transform.position = ball_pos;
-						//The GameObject's starting position and Rigidbody position
-						m_StartPos = transform.position;
-
-						// position the hole
-						//select 
-						if (m_HolePos == 1) {
-							pos = hole_pos_1;
-						} else if (m_HolePos == 2) {
-							pos = hole_pos_2;
-						} else if (m_HolePos == 3) {
-							pos = hole_pos_3;
-						}
-
-						//Debug.Log("Hole Position: " + m_HolePos);
-						Vector3 hole_pos = new Vector3(pos[0], pos[1], pos[2]);
-						//Debug.Log ("Position: " + hole_pos.ToString("F3"));
-						holeObj.transform.position = hole_pos;
-						Vector3 hole_rot = new Vector3(pos[3], pos[4], pos[5]);
-						holeObj.transform.rotation = Quaternion.Euler(hole_rot);
-
-						// compute initial distance
-						m_InitialDistance = Vector3.Distance (transform.position, holeObj.transform.position);
-						// compute angle to the hole
-						// sin(a) = holeObj.transform.position.z - transform.position.z / m_InitialDistance;
-						m_InitialAngle = Mathf.Rad2Deg * Mathf.Asin ((holeObj.transform.position.z - transform.position.z) / m_InitialDistance);
-						// Debug.Log ("Angle: " + m_InitialAngle);
-						// freeze the ball
-						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
-						// display the ball
-						m_Renderer.enabled = true;
-
-						// restart the game
-						// Debug.Log ("Restart Game....");
-						if (m_ModeSwitching == ModeSwitching.Idle) {
-							m_ModeSwitching = ModeSwitching.Start;
-						}
-
-					} else {
-						//Debug.Log ("No data change....");
-					}
-				}
-			}
-
-			while (timer < freq) {
-				timer += Time.deltaTime;
-				yield return null;
-			}
-			timer = 0f;
-			yield return null;
-		}
-
-	}
-
 	//The function outputs buttons, text fields, and other interactable UI elements to the Scene in Game view
 	void OnGUI()
 	{
@@ -432,10 +383,19 @@ public class PlayerCtrl : MonoBehaviour {
 						Array.Copy(bytes, 0, incommingData, 0, length); 						
 						// Convert byte array to string message. 						
 						string serverMessage = Encoding.ASCII.GetString(incommingData); 						
-						Debug.Log("server message received as: " + serverMessage); 					
+						Debug.Log("User message received: " + serverMessage); 
+						strArr = serverMessage.Split (new char[] { ',' });
+						m_HolePos = int.Parse (strArr [0]);
+						m_BallPos = int.Parse (strArr [1]);
+						m_Angle = float.Parse (strArr [2]);
+						m_AccelFactor = float.Parse (strArr [3]) / 10;
+
+						isdataArrived = true;
+
+						m_ModeSwitching = ModeSwitching.Socket;
 					} 				
 				} 			
-			}         
+			}
 		}         
 		catch (SocketException socketException) {             
 			Debug.Log("Socket exception: " + socketException);         
@@ -443,7 +403,7 @@ public class PlayerCtrl : MonoBehaviour {
 	}  	
 
 	/// Send message to server using socket connection. 	
-	private void SendMessage() {         
+	private void SendResults() {         
 		if (socketConnection == null) {             
 			return;         
 		}  		
@@ -451,12 +411,11 @@ public class PlayerCtrl : MonoBehaviour {
 			// Get a stream object for writing. 			
 			NetworkStream stream = socketConnection.GetStream(); 			
 			if (stream.CanWrite) {                 
-				string clientMessage = "This is a message from one of your clients."; 				
 				// Convert string message to byte array.                 
-				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage); 				
+				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(m_DistanceString);
 				// Write byte array to socketConnection stream.                 
 				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
-				Debug.Log("Client sent his message - should be received by server");             
+				// Debug.Log("Client sent his message - should be received by server");             
 			}         
 		} 		
 		catch (SocketException socketException) {             
