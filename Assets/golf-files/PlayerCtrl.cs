@@ -59,8 +59,8 @@ public class PlayerCtrl : MonoBehaviour {
 	private bool isdataArrived = false;
 
 	// socket with a minsky system in POK
-	// private string host = "129.33.248.110"
-	private string host = "localhost";
+	private string host = "129.33.248.110";
+//	private string host = "localhost";
 	private int port = 8989;
 	private TcpClient socketConnection; 	
 	private Thread clientReceiveThread;
