@@ -7,7 +7,7 @@ import sys
 from thread import *
  
 HOST = ''   # Symbolic name meaning all available interfaces
-PORT = 8989 # Arbitrary non-privileged port
+PORT = 8990 # Arbitrary non-privileged port
  
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print 'Socket created'

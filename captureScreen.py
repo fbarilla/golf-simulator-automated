@@ -13,14 +13,16 @@ import socket,struct,sys,time
 
 useCompress = False
 useSocket = True
-HOST = ''   # Symbolic name meaning all available interfaces
-PORT = 8990 # Arbitrary non-privileged port
+# HOST = ''   # Symbolic name meaning all available interfaces
+HOST = '129.33.248.110'   # Symbolic name meaning all available interfaces
+# PORT = 8990 # Arbitrary non-privileged port
+PORT = 8989 # Arbitrary non-privileged port
 
 def pixbuf2Image(pb):
    width,height = pb.get_width(),pb.get_height()
    return Image.frombytes("RGB",(width,height),pb.get_pixels() )
 
-def send_size(data):
+def send_frame(data):
     sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.connect((HOST,PORT))
     sock.sendall(struct.pack('>i', len(data))+data)
@@ -78,7 +80,9 @@ while True:
 
 	if(useSocket):
 		# print 'Using socket'
-		send_size(pickle.dumps(pb.get_pixels_array()))
+		send_frame(pickle.dumps(pb.get_pixels_array()))
+#		print 'sending ...'
+#		send_frame("test")
 	else:
 		# load the image into an array tocomply to the opencv format
 		open_cv_image = np.array(im) 

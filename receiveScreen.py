@@ -7,7 +7,7 @@ import pickle
 import socket,struct,sys,time
 
 HOST = ''   # Symbolic name meaning all available interfaces
-PORT = 8990 # Arbitrary non-privileged port
+PORT = 8989 # Arbitrary non-privileged port
 
 def recv_size(the_socket):
     #data length is packed into 4 bytes

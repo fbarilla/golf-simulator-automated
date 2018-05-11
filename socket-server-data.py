@@ -26,7 +26,7 @@ except socket.error as msg:
 print 'Socket bind complete'
  
 #Start listening on socket
-s.listen(10)
+s.listen(5)
 print 'Socket now listening: ' + str(PORT)
  
 #Function for handling connections. This will be used to create threads
