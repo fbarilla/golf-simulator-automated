@@ -10,7 +10,7 @@ using System.Threading;
 
 public class PlayerCtrl : MonoBehaviour {
 
-	private bool manual = true;
+	private bool manual = false;
 
 	public Transform holeObj;
 
@@ -59,8 +59,8 @@ public class PlayerCtrl : MonoBehaviour {
 	private bool isdataArrived = false;
 
 	// socket with a minsky system in POK
-	private string host = "129.33.248.110";
-//	private string host = "localhost";
+//	private string host = "129.33.248.110";
+	private string host = "localhost";
 	private int port = 8989;
 	private TcpClient socketConnection; 	
 	private Thread clientReceiveThread;
@@ -137,6 +137,7 @@ public class PlayerCtrl : MonoBehaviour {
 			// Debug.Log ("Angle: " + newAngle);
 
 			// distance to the hole (float)
+			float newDistanceToHole = Vector3.Distance (transform.position, holeObj.transform.position);
 			// Debug.Log("Distance to the hole: " + Vector3.Distance (transform.position, holeObj.transform.position).ToString ("F5"));
 
 			// compute force to apply based on the angle
@@ -154,42 +155,46 @@ public class PlayerCtrl : MonoBehaviour {
 			Vector3 appliedForce = vForce * (1.0f - t) * m_AccelFactor;
 			float appliedAngle = 0.0f;
 			Vector3 axis = Vector3.zero;
-			Quaternion.Euler(appliedForce).ToAngleAxis (out appliedAngle, out axis);
+			Quaternion.Euler (appliedForce).ToAngleAxis (out appliedAngle, out axis);
 			// Debug.Log ("Applied Force: " + appliedAngle);
 
-				m_Rigidbody.AddForce (vForce * (1.0f - t) * m_AccelFactor, ForceMode.Force);
+			m_Rigidbody.AddForce (vForce * (1.0f - t) * m_AccelFactor, ForceMode.Force);
 	
 				// almost stopped, apply drag
-				if (t > dragTrigger) {
-					drag += dragFactor;
-					m_Rigidbody.drag = drag;
-					if (Mathf.Abs (m_Rigidbody.velocity.x) < 0.05) {
-						if (!hasWon) {
-							//stop the ball
-							m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
-							results = "-99";
-							// switch to results
-							m_ModeSwitching = ModeSwitching.Result;
-						}
-					}
-				}
-
-				// test if the ball has fallen 
-				if (m_Rigidbody.position.y < -3) {
-
-					if (hasWon == false) {
-						//Debug.Log ("Ball has fallen outside the green....");
-						results = "-1";
+			if (t > dragTrigger) {
+				drag += dragFactor;
+				m_Rigidbody.drag = drag;
+				if (Mathf.Abs (m_Rigidbody.velocity.x) < 0.05) {
+					if (!hasWon) {
 						//stop the ball
 						m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+						results = "-99";
 						// switch to results
 						m_ModeSwitching = ModeSwitching.Result;
 					}
 				}
+			}
+
+				// test if the ball has fallen 
+			if (m_Rigidbody.position.y < -3) {
+
+				if (hasWon == false) {
+					//Debug.Log ("Ball has fallen outside the green....");
+					results = "-1";
+					//stop the ball
+					m_Rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+					// switch to results
+					m_ModeSwitching = ModeSwitching.Result;
+				}
+			}
+
+				// send intermediate data
+			string data = "\"" + m_HolePos.ToString() + "," + m_BallPos.ToString() + "," + newDistanceToHole.ToString("F2") + "," + newAngle.ToString("F2") + "," + appliedAngle.ToString("F2") + "\"";
+			// Debug.Log ("Data :" + data);
+			SendData(data);
 				break;
 
 			case ModeSwitching.Result:
-//				if (results.Equals ("-1")||results.Equals ("0")) {
 				if (results.Equals ("-1")) {
 					m_DistanceString = "-1";
 					// nothing else to do. Ball is in the hole or fell outside of the green
@@ -204,7 +209,7 @@ public class PlayerCtrl : MonoBehaviour {
 				}
 
 				// send the results back to the client
-				SendResults();
+				SendEndEpisode();
 				// go to idle state
 				m_ModeSwitching = ModeSwitching.Idle;
 				break;
@@ -403,7 +408,7 @@ public class PlayerCtrl : MonoBehaviour {
 						Array.Copy(bytes, 0, incommingData, 0, length); 						
 						// Convert byte array to string message. 						
 						string serverMessage = Encoding.ASCII.GetString(incommingData); 						
-						Debug.Log("User message received: " + serverMessage); 
+						// Debug.Log("User message received: " + serverMessage); 
 						strArr = serverMessage.Split (new char[] { ',' });
 						m_HolePos = int.Parse (strArr [0]);
 						m_BallPos = int.Parse (strArr [1]);
@@ -423,7 +428,7 @@ public class PlayerCtrl : MonoBehaviour {
 	}  	
 
 	/// Send message to server using socket connection. 	
-	private void SendResults() {         
+	private void SendEndEpisode() {         
 		if (socketConnection == null) {             
 			return;         
 		}  		
@@ -432,7 +437,30 @@ public class PlayerCtrl : MonoBehaviour {
 			NetworkStream stream = socketConnection.GetStream(); 			
 			if (stream.CanWrite) {                 
 				// Convert string message to byte array.                 
-				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(m_DistanceString);
+//				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(m_DistanceString);
+				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes("END");
+				// Write byte array to socketConnection stream.                 
+				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
+				// Debug.Log("Client sent his message - should be received by server");             
+			}         
+		} 		
+		catch (SocketException socketException) {             
+			Debug.Log("Socket exception: " + socketException);         
+		}     
+	} 
+
+	/// Send data to server using socket connection. 	
+	private void SendData(string data) {         
+		if (socketConnection == null) {             
+			return;         
+		}  		
+		try { 			
+			// Get a stream object for writing. 			
+			NetworkStream stream = socketConnection.GetStream(); 			
+			if (stream.CanWrite) {                 
+				// Convert string message to byte array.                 
+				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(data);
+				// Debug.Log("Data: " + data);
 				// Write byte array to socketConnection stream.                 
 				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
 				// Debug.Log("Client sent his message - should be received by server");             

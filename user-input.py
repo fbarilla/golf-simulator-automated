@@ -32,20 +32,28 @@ def clientthread(conn):
  
 	print '******* Input data ********'
 	# get user input
-	results = getUserInput()
+	userInput = getUserInput()
 
-	print 'Values to send: ' + results
+	print 'Values to send: ' + userInput
 
 	# send 
-	conn.send(results)
-        
-        #Receiving from client
-        data = conn.recv(1024)
-        if not data: 
-            break
-	else:
-	    print 'Position: ' + data
-     
+	conn.send(userInput)
+	break
+
+    while True:        
+
+	        #Receiving from client
+	        data = conn.recv(65536)
+
+	        if "END" in data: 
+		    print 'Episode Status: ' + data
+	            break
+		else:
+         	    print data
+
+    # restart new episode
+    clientthread(conn)
+    
     #came out of loop
     conn.close()
 
@@ -97,6 +105,8 @@ while 1:
      
     #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
     start_new_thread(clientthread ,(conn,))
+
+    print 'Done ...'
  
 s.close()
 
