@@ -44,12 +44,14 @@ def clientthread(conn):
 
 	        #Receiving from client
 	        data = conn.recv(65536)
+                lines = data.split("\"")
+                for line in lines:
+			if(len(line) != 0):
+         	    		print line
 
-	        if "END" in data: 
-		    print 'Episode Status: ' + data
-	            break
-		else:
-         	    print data
+	       	if "END" in data:
+			print 'Episode Completed... '
+			break 
 
     # restart new episode
     clientthread(conn)

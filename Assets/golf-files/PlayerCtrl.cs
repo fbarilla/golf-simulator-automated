@@ -59,8 +59,8 @@ public class PlayerCtrl : MonoBehaviour {
 	private bool isdataArrived = false;
 
 	// socket with a minsky system in POK
-//	private string host = "129.33.248.110";
-	private string host = "localhost";
+	private string host = "129.33.248.110";
+//	private string host = "localhost";
 	private int port = 8989;
 	private TcpClient socketConnection; 	
 	private Thread clientReceiveThread;
@@ -189,7 +189,7 @@ public class PlayerCtrl : MonoBehaviour {
 			}
 
 				// send intermediate data
-			string data = "\"" + m_HolePos.ToString() + "," + m_BallPos.ToString() + "," + newDistanceToHole.ToString("F2") + "," + newAngle.ToString("F2") + "," + appliedAngle.ToString("F2") + "\"";
+			string data = m_HolePos.ToString() + "," + m_BallPos.ToString() + "," + newDistanceToHole.ToString("F2") + "," + newAngle.ToString("F2") + "," + appliedAngle.ToString("F2") + "\"";
 			// Debug.Log ("Data :" + data);
 			SendData(data);
 				break;
@@ -440,7 +440,8 @@ public class PlayerCtrl : MonoBehaviour {
 //				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(m_DistanceString);
 				byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes("END");
 				// Write byte array to socketConnection stream.                 
-				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);                 
+				stream.Write(clientMessageAsByteArray, 0, clientMessageAsByteArray.Length);
+				Debug.Log("Ball Position: " + m_DistanceString);
 				// Debug.Log("Client sent his message - should be received by server");             
 			}         
 		} 		
