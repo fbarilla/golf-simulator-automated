@@ -10,7 +10,7 @@ using System.Threading;
 
 public class PlayerCtrl : MonoBehaviour {
 
-	private bool manual = false;
+	private bool manual = true;
 
 	public Transform holeObj;
 
@@ -124,19 +124,39 @@ public class PlayerCtrl : MonoBehaviour {
 
 			//This is Force Mode
 		case ModeSwitching.Force:
-				// remove the contstraint (stop)
-				m_Rigidbody.constraints = RigidbodyConstraints.None;
-				// compute force to apply based on the angle
-				vForce = Quaternion.AngleAxis (m_InitialAngle + m_Angle, Vector3.up) * -Vector3.right;
-				//Debug.Log ("vForce: " + vForce.ToString ("F2"));
+			// remove the contstraint (stop)
+			m_Rigidbody.constraints = RigidbodyConstraints.None;
 
-				currentLerpTime += Time.deltaTime;
-				if (currentLerpTime > lerpTime) {
-					currentLerpTime = lerpTime;
-				}
-				// acceleration/deceleration function (sigmoid)
-				float t = currentLerpTime / lerpTime;
-				t = t * t * (3f - 2f * t);
+			// position relative to initial position (Vector3)
+			// Debug.Log("Relative position: " + (transform.position - m_StartPos));
+
+			// compute angle 
+			float opositeSide = Mathf.Abs (transform.position.z) - Mathf.Abs (m_StartPos.z);
+			float adjacentSide = Mathf.Abs (transform.position.x) - Mathf.Abs (m_StartPos.x);
+			float newAngle = Mathf.Atan (opositeSide / adjacentSide) * Mathf.Rad2Deg;
+			// Debug.Log ("Angle: " + newAngle);
+
+			// distance to the hole (float)
+			// Debug.Log("Distance to the hole: " + Vector3.Distance (transform.position, holeObj.transform.position).ToString ("F5"));
+
+			// compute force to apply based on the angle
+			vForce = Quaternion.AngleAxis (m_InitialAngle + m_Angle, Vector3.up) * -Vector3.right;
+			//Debug.Log ("vForce: " + vForce.ToString ("F2"));
+
+			currentLerpTime += Time.deltaTime;
+			if (currentLerpTime > lerpTime) {
+				currentLerpTime = lerpTime;
+			}
+			// acceleration/deceleration function (sigmoid)
+			float t = currentLerpTime / lerpTime;
+			t = t * t * (3f - 2f * t);
+			// applied force (Vector3)
+			Vector3 appliedForce = vForce * (1.0f - t) * m_AccelFactor;
+			float appliedAngle = 0.0f;
+			Vector3 axis = Vector3.zero;
+			Quaternion.Euler(appliedForce).ToAngleAxis (out appliedAngle, out axis);
+			// Debug.Log ("Applied Force: " + appliedAngle);
+
 				m_Rigidbody.AddForce (vForce * (1.0f - t) * m_AccelFactor, ForceMode.Force);
 	
 				// almost stopped, apply drag
@@ -183,7 +203,7 @@ public class PlayerCtrl : MonoBehaviour {
 					results = m_DistanceString + ", " + relativeDistance.ToString("F2");
 				}
 
-				// send the results back tothe client
+				// send the results back to the client
 				SendResults();
 				// go to idle state
 				m_ModeSwitching = ModeSwitching.Idle;
